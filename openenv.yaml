@@ -1,0 +1,127 @@
+name: email_triage_env
+version: "1.0.0"
+description: >
+  A real-world customer support email triage environment.
+  AI agents learn to classify urgency, route to departments,
+  and draft professional replies to realistic business emails.
+  Three tasks of increasing difficulty test the full triage pipeline.
+
+license: apache-2.0
+openenv_spec: "1.0"
+
+tags:
+  - openenv
+  - email
+  - customer-support
+  - triage
+  - nlp
+  - real-world
+  - rl-environment
+
+observation_space:
+  type: object
+  class: EmailObservation
+  fields:
+    email_id: string
+    subject: string
+    body: string
+    sender: string
+    timestamp: string
+    task_id: string
+    task_description: string
+    step_feedback: string
+    reward: float
+    done: boolean
+    score: float
+
+action_space:
+  type: object
+  class: TriageAction
+  fields:
+    urgency:
+      type: string
+      enum: [urgent, normal, low]
+      required: true
+    department:
+      type: string
+      enum: [billing, technical, returns, general]
+      required: false
+    response:
+      type: string
+      required: false
+    reasoning:
+      type: string
+      required: false
+
+reward_range: [0.0, 1.0]
+
+tasks:
+  - id: task_classify
+    name: "Email Urgency Classification"
+    difficulty: easy
+    description: >
+      Classify the urgency of each incoming support email.
+      Set urgency to: urgent | normal | low.
+    max_steps: 10
+    score_range: [0.0, 1.0]
+    action_fields_required: [urgency]
+
+  - id: task_route
+    name: "Department Routing + Classification"
+    difficulty: medium
+    description: >
+      Classify urgency AND route to the correct department.
+      Set urgency and department. Partial credit per component.
+    max_steps: 10
+    score_range: [0.0, 1.0]
+    action_fields_required: [urgency, department]
+
+  - id: task_respond
+    name: "Full Triage: Classify + Route + Draft Response"
+    difficulty: hard
+    description: >
+      Classify urgency, route to department, AND draft a professional
+      reply. Scored on all three components with partial credit.
+    max_steps: 10
+    score_range: [0.0, 1.0]
+    action_fields_required: [urgency, department, response]
+
+server:
+  type: fastapi
+  port: 7860
+  health_check: /health
+
+docker:
+  base_image: python:3.11-slim
+  build_context: "."
+  dockerfile: Dockerfile
+
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+    description: Start a new episode
+  step:
+    method: POST
+    path: /step
+    description: Submit a triage action
+  state:
+    method: GET
+    path: /state
+    description: Get current episode state
+  tasks:
+    method: GET
+    path: /tasks
+    description: List tasks and action schemas
+  grader:
+    method: POST
+    path: /grader
+    description: Score a single action offline
+  baseline:
+    method: GET
+    path: /baseline
+    description: Run rule-based baseline and return scores
+  health:
+    method: GET
+    path: /health
+    description: Health check

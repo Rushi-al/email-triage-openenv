@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.python-version
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+desktop.ini
