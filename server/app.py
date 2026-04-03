@@ -194,3 +194,10 @@ async def baseline():
     except Exception as e:
         logger.exception("Error in /baseline")
         raise HTTPException(500, str(e))
+
+def main():
+    import uvicorn
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, workers=1)
+
+if __name__ == "__main__":
+    main()
