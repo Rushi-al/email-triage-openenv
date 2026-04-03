@@ -1,0 +1,24 @@
+﻿{
+    "baseline_agent":  "keyword_heuristic",
+    "scores":  {
+                   "task_classify":  {
+                                         "task_id":  "task_classify",
+                                         "avg_score":  0.8,
+                                         "total_reward":  8.0,
+                                         "steps":  10
+                                     },
+                   "task_route":  {
+                                      "task_id":  "task_route",
+                                      "avg_score":  0.85,
+                                      "total_reward":  8.5,
+                                      "steps":  10
+                                  },
+                   "task_respond":  {
+                                        "task_id":  "task_respond",
+                                        "avg_score":  0.765,
+                                        "total_reward":  7.65,
+                                        "steps":  10
+                                    }
+               },
+    "note":  "Run inference_script.py with OPENAI_API_KEY for LLM baseline scores."
+}
