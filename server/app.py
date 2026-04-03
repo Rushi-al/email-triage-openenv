@@ -37,6 +37,8 @@ class ResetRequest(BaseModel):
     task_id: str = "task_classify"
     seed: Optional[int] = None
 
+    model_config = {"extra": "ignore"}
+
 
 class StepRequest(BaseModel):
     urgency: str
@@ -68,7 +70,9 @@ async def health():
 
 
 @app.post("/reset", response_model=EmailObservation)
-async def reset(req: ResetRequest):
+async def reset(req: ResetRequest = None):
+    if req is None:
+        req = ResetRequest()
     """Start a new episode. task_id: task_classify | task_route | task_respond"""
     if req.task_id not in VALID_TASK_IDS:
         raise HTTPException(400, f"Invalid task_id '{req.task_id}'. Must be one of {VALID_TASK_IDS}")
