@@ -250,13 +250,24 @@ TASK_DESCRIPTIONS = {
 }
 
 
+def _clamp(score: float) -> float:
+    """Ensure score is strictly between 0 and 1 (exclusive)."""
+    return round(max(0.01, min(0.99, score)), 4)
+
 def grade(task_id: str, action: TriageAction, ground_truth: dict) -> TriageReward:
     """Dispatch to the correct grader for the given task_id."""
     if task_id == "task_classify":
-        return grade_classify(action, ground_truth)
+        r = grade_classify(action, ground_truth)
     elif task_id == "task_route":
-        return grade_route(action, ground_truth)
+        r = grade_route(action, ground_truth)
     elif task_id == "task_respond":
-        return grade_respond(action, ground_truth)
+        r = grade_respond(action, ground_truth)
     else:
         raise ValueError(f"Unknown task_id: {task_id}")
+    
+    # Clamp to strictly (0, 1) exclusive as required by OpenEnv validator
+    r.total          = _clamp(r.total)
+    r.urgency_score  = _clamp(r.urgency_score)
+    r.routing_score  = _clamp(r.routing_score)
+    r.response_score = _clamp(r.response_score)
+    return r
