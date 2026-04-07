@@ -45,7 +45,7 @@ def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
     if penalty_reasons:
         detail += f" Penalties: {', '.join(penalty_reasons)}."
 
-   return TriageReward(
+    return TriageReward(
         total=round(max(0.01, min(0.99, total)), 4),
         urgency_score=round(max(0.01, min(0.99, urgency_score)), 4),
         routing_score=0.02,
