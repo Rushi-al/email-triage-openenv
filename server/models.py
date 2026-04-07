@@ -100,7 +100,7 @@ class TriageReward(BaseModel):
         details        : Human-readable explanation
     """
 
-    total: float = Field(..., ge=0.0, le=1.0, description="Total reward [0.0-1.0]")
+    total: float = Field(..., ge=0.01, le=0.99, description="Total reward (0.0–1.0) exclusive")
     urgency_score: float = Field(0.0, description="Score for urgency classification")
     routing_score: float = Field(0.0, description="Score for department routing")
     response_score: float = Field(0.0, description="Score for response quality")

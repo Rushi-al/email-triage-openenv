@@ -45,11 +45,11 @@ def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
     if penalty_reasons:
         detail += f" Penalties: {', '.join(penalty_reasons)}."
 
-    return TriageReward(
-        total=round(total, 4),
-        urgency_score=round(urgency_score, 4),
-        routing_score=0.0,
-        response_score=0.0,
+   return TriageReward(
+        total=round(max(0.01, min(0.99, total)), 4),
+        urgency_score=round(max(0.01, min(0.99, urgency_score)), 4),
+        routing_score=0.02,
+        response_score=0.02,
         penalties=round(penalties, 4),
         details=detail,
     )
@@ -98,10 +98,10 @@ def grade_route(action: TriageAction, ground_truth: dict) -> TriageReward:
         parts.append(f"Penalties: {', '.join(penalty_reasons)}")
 
     return TriageReward(
-        total=round(total, 4),
-        urgency_score=round(urgency_score, 4),
-        routing_score=round(routing_score, 4),
-        response_score=0.0,
+        total=round(max(0.01, min(0.99, total)), 4),
+        urgency_score=round(max(0.01, min(0.99, urgency_score)), 4),
+        routing_score=round(max(0.01, min(0.99, routing_score)), 4),
+        response_score=0.02,
         penalties=round(penalties, 4),
         details=" | ".join(parts),
     )
@@ -218,10 +218,10 @@ def grade_respond(action: TriageAction, ground_truth: dict) -> TriageReward:
     summary_parts.append("Response: " + " | ".join(response_details))
 
     return TriageReward(
-        total=round(min(1.0, total), 4),
-        urgency_score=round(urgency_score, 4),
-        routing_score=round(routing_score, 4),
-        response_score=round(response_score, 4),
+        total=round(max(0.01, min(0.99, total)), 4),
+        urgency_score=round(max(0.01, min(0.99, urgency_score)), 4),
+        routing_score=round(max(0.01, min(0.99, routing_score)), 4),
+        response_score=round(max(0.01, min(0.99, response_score)), 4),
         penalties=round(penalties, 4),
         details=" || ".join(summary_parts),
     )
