@@ -188,13 +188,14 @@ def run_task(task_id: str, seed: int = 42) -> Dict[str, Any]:
         if done:
             break
 
-    avg_score = total_reward / steps if steps > 0 else 0.0
+    avg_score = max(0.01, min(0.99, total_reward / steps)) if steps > 0 else 0.01  
+    
     return {
-        "task_id": task_id,
-        "avg_score": round(avg_score, 4),
-        "total_reward": round(total_reward, 4),
-        "steps": steps,
-    }
+    "task_id": task_id,
+    "avg_score": round(max(0.01, min(0.99, avg_score)), 4),
+    "total_reward": round(max(0.01, min(0.99, total_reward / steps if steps > 0 else 0.01)), 4),
+    "steps": steps,
+}
 
 
 def run_baseline() -> Dict[str, Any]:
