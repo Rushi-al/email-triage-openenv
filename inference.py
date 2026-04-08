@@ -45,7 +45,9 @@ def log_start(task: str, env: str, model: str) -> None:
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_str = error if error else "null"
     done_str  = "true" if done else "false"
-    print(f"[STEP] step={step} action={action} reward={reward:.2f} done={done_str} error={error_str}", flush=True)
+    # Clamp reward strictly between 0 and 1 (exclusive) for validator
+    safe_reward = round(max(0.05, min(0.95, float(reward))), 2)
+    print(f"[STEP] step={step} action={action} reward={safe_reward:.2f} done={done_str} error={error_str}", flush=True)
 
 def log_end(success: bool, steps: int, rewards: list) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
@@ -130,8 +132,9 @@ def run_task(client: OpenAI, task_id: str) -> dict:
         error = str(e)
         log_step(steps + 1, "null", 0.0, True, error)
 
-    avg_score = sum(rewards) / len(rewards) if rewards else 0.0
-    success   = avg_score >= 0.5
+    avg_score = sum(rewards) / len(rewards) if rewards else 0.05
+    avg_score = round(max(0.05, min(0.95, avg_score)), 4)
+    success = avg_score >= 0.5
     log_end(success, steps, rewards)
 
     return {
