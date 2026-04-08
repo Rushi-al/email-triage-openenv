@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from .environment import EmailTriageEnvironment, VALID_TASK_IDS
 from .models import TriageAction, EmailObservation, TriageState
-from .graders import grade, TASK_DESCRIPTIONS
+from .graders import grade, TASK_DESCRIPTIONS, clamp_score
 from .email_dataset import EMAILS
 
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +80,7 @@ async def reset(req: ResetRequest = None):
         obs = env.reset(task_id=req.task_id, seed=req.seed)
         obs_dict = obs.model_dump()
         obs_dict["reward"] = 0.05   # not 0.0
-        obs_dict["score"] = 0.05    # not 0.0
+        obs_dict["score"] = clamp_score(0.05)
         from server.models import EmailObservation
         return EmailObservation(**obs_dict)
     except Exception as e:
@@ -103,11 +103,11 @@ async def step(req: StepRequest):
     try:
         obs, reward, done, info = env.step(action)
         # Clamp reward strictly between 0 and 1 (exclusive) per validator requirement
-        reward = round(max(0.01, min(0.99, reward)), 4)
-        info["total"] = round(max(0.01, min(0.99, info.get("total", 0.01))), 4)
+        reward = clamp_score(round(reward, 4))
+        info["total"] = clamp_score(round(info.get("total", 0.01), 4))
         obs_dict = obs.model_dump()
-        obs_dict["reward"] = round(max(0.01, min(0.99, obs_dict.get("reward", 0.01))), 4)
-        obs_dict["score"] = round(max(0.01, min(0.99, obs_dict.get("score", 0.01))), 4)
+        obs_dict["reward"] = clamp_score(round(obs_dict.get("reward", 0.01), 4))
+        obs_dict["score"] = clamp_score(round(obs_dict.get("score", 0.01), 4))
         return {"observation": obs_dict, "reward": reward, "done": done, "info": info}
     except RuntimeError as e:
         raise HTTPException(409, str(e))

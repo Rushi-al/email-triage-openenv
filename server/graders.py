@@ -11,9 +11,9 @@ WRONG  = 0.10   # never 0.0
 RIGHT  = 0.90   # never 1.0
 
 
-def _s(score: float) -> float:
-    """Hard clamp — guarantee strictly (0,1)."""
-    return round(max(0.05, min(0.95, float(score))), 4)
+def clamp_score(score: float) -> float:
+    """Ensure score is strictly within (0, 1)."""
+    return max(1e-6, min(1 - 1e-6, score))
 
 
 def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
@@ -30,10 +30,10 @@ def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
         f"(expected '{ground_truth['urgency']}')"
     )
     return TriageReward(
-        total=_s(total),
-        urgency_score=_s(urgency_score),
-        routing_score=_s(0.10),
-        response_score=_s(0.10),
+        total=clamp_score(total),
+        urgency_score=clamp_score(urgency_score),
+        routing_score=clamp_score(0.10),
+        response_score=clamp_score(0.10),
         penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=detail,
     )
@@ -48,10 +48,10 @@ def grade_route(action: TriageAction, ground_truth: dict) -> TriageReward:
     raw_total = (urgency_score * 0.5) + (routing_score * 0.5) - penalties
     total = max(WRONG, raw_total)
     return TriageReward(
-        total=_s(total),
-        urgency_score=_s(urgency_score),
-        routing_score=_s(routing_score),
-        response_score=_s(0.10),
+        total=clamp_score(total),
+        urgency_score=clamp_score(urgency_score),
+        routing_score=clamp_score(routing_score),
+        response_score=clamp_score(0.10),
         penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=(
             f"Urgency {'OK' if u_correct else 'WRONG'} | "
@@ -95,10 +95,10 @@ def grade_respond(action: TriageAction, ground_truth: dict) -> TriageReward:
     total = max(WRONG, raw)
 
     return TriageReward(
-        total=_s(total),
-        urgency_score=_s(urgency_score),
-        routing_score=_s(routing_score),
-        response_score=_s(response_score),
+        total=clamp_score(total),
+        urgency_score=clamp_score(urgency_score),
+        routing_score=clamp_score(routing_score),
+        response_score=clamp_score(response_score),
         penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=(
             f"Urgency {'OK' if u_correct else 'WRONG'} | "
@@ -137,8 +137,8 @@ def grade(task_id: str, action: TriageAction, ground_truth: dict) -> TriageRewar
     else:
         raise ValueError(f"Unknown task_id: {task_id}")
     # Final safety clamp — always strictly (0,1)
-    r.total          = _s(r.total)
-    r.urgency_score  = _s(r.urgency_score)
-    r.routing_score  = _s(r.routing_score)
-    r.response_score = _s(r.response_score)
+    r.total          = clamp_score(r.total)
+    r.urgency_score  = clamp_score(r.urgency_score)
+    r.routing_score  = clamp_score(r.routing_score)
+    r.response_score = clamp_score(r.response_score)
     return r

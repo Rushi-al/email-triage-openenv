@@ -16,6 +16,7 @@ from typing import Dict, Any
 
 from .environment import EmailTriageEnvironment
 from .models import TriageAction
+from .graders import clamp_score
 
 
 # -----------------------------------------------------------------------------
@@ -188,14 +189,16 @@ def run_task(task_id: str, seed: int = 42) -> Dict[str, Any]:
         if done:
             break
 
-    avg_score = max(0.01, min(0.99, total_reward / steps)) if steps > 0 else 0.01  
-    
+    avg_score = (total_reward / steps) if steps > 0 else 0.0
+    avg_score = clamp_score(round(avg_score, 4))
+    total_reward_score = clamp_score(round(total_reward / steps if steps > 0 else 0.0, 4))
+
     return {
-    "task_id": task_id,
-    "avg_score": round(max(0.01, min(0.99, avg_score)), 4),
-    "total_reward": round(max(0.01, min(0.99, total_reward / steps if steps > 0 else 0.01)), 4),
-    "steps": steps,
-}
+        "task_id": task_id,
+        "avg_score": avg_score,
+        "total_reward": total_reward_score,
+        "steps": steps,
+    }
 
 
 def run_baseline() -> Dict[str, Any]:

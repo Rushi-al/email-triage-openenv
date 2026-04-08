@@ -8,7 +8,7 @@ from typing import Tuple, Dict, Any, Optional
 
 from .models import TriageAction, EmailObservation, TriageState
 from .email_dataset import EMAILS
-from .graders import grade, TASK_DESCRIPTIONS
+from .graders import grade, TASK_DESCRIPTIONS, clamp_score
 
 MAX_STEPS_PER_EPISODE = 10
 VALID_TASK_IDS = ["task_classify", "task_route", "task_respond"]
@@ -71,7 +71,7 @@ class EmailTriageEnvironment:
         done = self._state.step_count >= len(self._email_queue)
         self._state.done = done
         avg_score = self._cumulative_score / self._state.emails_processed
-        self._state.cumulative_score = round(avg_score, 4)
+        self._state.cumulative_score = clamp_score(round(avg_score, 4))
 
         if done:
             obs = EmailObservation(
@@ -89,9 +89,9 @@ class EmailTriageEnvironment:
                     f"Episode complete! Avg score: {avg_score:.3f}. "
                     f"Last: {reward_obj.details}"
                 ),
-                reward=reward_obj.total,
+                reward=clamp_score(reward_obj.total),
                 done=True,
-                score=round(avg_score, 4),
+                score=clamp_score(round(avg_score, 4)),
             )
         else:
             self._current_email = self._email_queue[self._state.step_count]
@@ -104,7 +104,7 @@ class EmailTriageEnvironment:
 
         info = reward_obj.model_dump()
         info["emails_remaining"] = len(self._email_queue) - self._state.step_count
-        return obs, reward_obj.total, done, info
+        return obs, clamp_score(reward_obj.total), done, info
 
     @property
     def state(self) -> TriageState:
@@ -129,8 +129,7 @@ class EmailTriageEnvironment:
             task_id=self._state.task_id,
             task_description=TASK_DESCRIPTIONS[self._state.task_id],
             step_feedback=feedback,
-             reward=round(max(0.05, min(0.95, reward)) if reward > 0 else 0.05, 4),
+            reward=clamp_score(round(reward, 4)),
             done=done,
-            score=round(max(0.05, min(0.95, avg)) if avg > 0 else 0.05, 4),
-        
+            score=clamp_score(round(avg, 4)),
         )
