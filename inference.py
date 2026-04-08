@@ -1,22 +1,7 @@
-"""
-inference.py - Official inference script for Email Triage OpenEnv.
-
-Environment variables:
-    API_BASE_URL   LLM endpoint  (default: https://router.huggingface.co/v1)
-    MODEL_NAME     Model ID      (default: Qwen/Qwen2.5-72B-Instruct)
-    HF_TOKEN       HuggingFace API token (no default)
-    ENV_BASE_URL   Environment URL (default: http://localhost:7860)
-"""
-
-import os
-import sys
-import json
-import time
-import requests
+import os, sys, json, time, requests
 from typing import Optional
 from openai import OpenAI
 
-# ── Config ────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN     = os.getenv("HF_TOKEN")
@@ -24,179 +9,104 @@ ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 BENCHMARK    = "email_triage_env"
 MAX_STEPS    = 12
 SEED         = 42
+TASK_IDS     = ["task_classify", "task_route", "task_respond"]
 
-TASK_IDS = ["task_classify", "task_route", "task_respond"]
-
-SYSTEM_PROMPT = """You are an expert customer support email triage agent.
-Respond ONLY with a valid JSON object - no prose, no markdown.
-
-For task_classify:  {"urgency": "urgent"|"normal"|"low"}
-For task_route:     {"urgency": "...", "department": "billing"|"technical"|"returns"|"general"}
-For task_respond:   {"urgency": "...", "department": "...", "response": "<your draft reply>"}
-
-Urgency: urgent=time-critical/financial loss, normal=standard issue, low=informational/feedback
-Department: billing=charges/invoices, technical=API/bugs/login, returns=wrong items/damage, general=other
+SYSTEM_PROMPT = """You are a customer support email triage agent.
+Respond ONLY with valid JSON. No prose, no markdown fences.
+task_classify:  {"urgency": "urgent"|"normal"|"low"}
+task_route:     {"urgency": "...", "department": "billing"|"technical"|"returns"|"general"}
+task_respond:   {"urgency": "...", "department": "...", "response": "<draft reply>"}
 """
 
+def _r(v) -> float:
+    return round(max(0.1, min(0.9, float(v if v is not None else 0.5))), 2)
 
-def _safe_reward(r) -> float:
-    """Guarantee reward is strictly between 0 and 1 — never 0.0 or 1.0."""
-    return round(max(0.05, min(0.95, float(r))), 2)
-
-
-# ── Logging helpers (MANDATORY FORMAT) ───────────────────────────────────
-def log_start(task: str, env: str, model: str) -> None:
+def log_start(task, env, model):
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
+def log_step(step, action, reward, done, error):
+    print(f"[STEP] step={step} action={action} reward={_r(reward):.2f} done={'true' if done else 'false'} error={error or 'null'}", flush=True)
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    error_str  = error if error else "null"
-    done_str   = "true" if done else "false"
-    safe_r     = _safe_reward(reward)
-    print(f"[STEP] step={step} action={action} reward={safe_r:.2f} done={done_str} error={error_str}", flush=True)
+def log_end(success, steps, rewards):
+    safe = [_r(r) for r in rewards] if rewards else [0.5]
+    print(f"[END] success={'true' if success else 'false'} steps={steps} rewards={','.join(f'{r:.2f}' for r in safe)}", flush=True)
 
-
-def log_end(success: bool, steps: int, rewards: list) -> None:
-    safe_rewards = [_safe_reward(r) for r in rewards]
-    rewards_str  = ",".join(f"{r:.2f}" for r in safe_rewards)
-    success_str  = "true" if success else "false"
-    print(f"[END] success={success_str} steps={steps} rewards={rewards_str}", flush=True)
-
-
-# ── Environment helpers ───────────────────────────────────────────────────
-def env_post(path: str, payload: dict) -> dict:
+def env_post(path, payload):
     r = requests.post(f"{ENV_BASE_URL}{path}", json=payload, timeout=30)
     r.raise_for_status()
     return r.json()
 
-
-def env_get(path: str) -> dict:
+def env_get(path):
     r = requests.get(f"{ENV_BASE_URL}{path}", timeout=30)
     r.raise_for_status()
     return r.json()
 
-
-# ── LLM call ─────────────────────────────────────────────────────────────
-def call_llm(client: OpenAI, obs: dict) -> dict:
-    prompt = (
-        f"TASK: {obs['task_description']}\n\n"
-        f"FROM: {obs['sender']}\n"
-        f"SUBJECT: {obs['subject']}\n"
-        f"DATE: {obs['timestamp']}\n\n"
-        f"BODY:\n{obs['body']}\n\n"
-        "Respond with JSON only."
-    )
+def call_llm(client, obs):
+    prompt = f"TASK: {obs['task_description']}\nFROM: {obs['sender']}\nSUBJECT: {obs['subject']}\n\nBODY:\n{obs['body']}\n\nJSON only."
     for attempt in range(3):
         try:
             resp = client.chat.completions.create(
                 model=MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": prompt},
-                ],
-                temperature=0.1,
-                max_tokens=512,
-                response_format={"type": "json_object"},
+                messages=[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":prompt}],
+                temperature=0.1, max_tokens=512,
+                response_format={"type":"json_object"},
             )
             return json.loads(resp.choices[0].message.content)
         except Exception:
-            if attempt == 2:
-                return {"urgency": "normal"}
+            if attempt == 2: return {"urgency": "normal"}
             time.sleep(1 + attempt)
     return {"urgency": "normal"}
 
-
-# ── Run one task episode ──────────────────────────────────────────────────
-def run_task(client: OpenAI, task_id: str) -> dict:
+def run_task(client, task_id):
     log_start(task_id, BENCHMARK, MODEL_NAME)
-
-    obs     = env_post("/reset", {"task_id": task_id, "seed": SEED})
-    rewards = []
-    steps   = 0
-    error   = None
-
+    rewards, steps, error = [], 0, None
     try:
+        obs = env_post("/reset", {"task_id": task_id, "seed": SEED})
         while not obs.get("done", False) and steps < MAX_STEPS:
             action_dict = call_llm(client, obs)
             action_dict.setdefault("urgency", "normal")
-            action_str = json.dumps(action_dict, separators=(",", ":"))
-
-            step_result = env_post("/step", {
-                "urgency":    action_dict.get("urgency"),
+            action_str = json.dumps(action_dict, separators=(",",":"))
+            result = env_post("/step", {
+                "urgency": action_dict.get("urgency"),
                 "department": action_dict.get("department"),
-                "response":   action_dict.get("response"),
+                "response": action_dict.get("response"),
             })
-
-            raw_reward = step_result.get("reward", 0.5)
-            reward     = _safe_reward(raw_reward)
-            done       = step_result.get("done", False)
-            error      = step_result.get("info", {}).get("error")
-            steps     += 1
+            reward = _r(result.get("reward", 0.5))
+            done   = result.get("done", False)
+            error  = result.get("info", {}).get("error")
+            steps += 1
             rewards.append(reward)
-
             log_step(steps, action_str, reward, done, error)
-
-            obs = step_result.get("observation", {})
-            if done:
-                break
-
+            obs = result.get("observation", {})
+            if done: break
     except Exception as e:
-        error      = str(e)
-        fallback_r = _safe_reward(0.5)
-        log_step(steps + 1, "null", fallback_r, True, error)
+        error = str(e)
+        log_step(steps + 1, "null", 0.5, True, error)
+        if not rewards: rewards = [0.5]
 
-    avg_score   = sum(rewards) / len(rewards) if rewards else 0.5
-    avg_score   = _safe_reward(avg_score)
-    success     = avg_score >= 0.5
-    log_end(success, steps, rewards)
+    avg   = _r(sum(rewards) / len(rewards))
+    log_end(avg >= 0.5, steps, rewards)
+    return {"task_id": task_id, "avg_score": avg, "steps": steps, "success": avg >= 0.5, "rewards": rewards}
 
-    return {
-        "task_id":   task_id,
-        "avg_score": round(avg_score, 4),
-        "steps":     steps,
-        "success":   success,
-        "rewards":   rewards,
-    }
-
-
-# ── Main ──────────────────────────────────────────────────────────────────
 def main():
     if not HF_TOKEN:
-        print("ERROR: HF_TOKEN environment variable is not set.", flush=True)
+        print("ERROR: HF_TOKEN not set.", flush=True)
         sys.exit(1)
-
     try:
-        health = env_get("/health")
-        print(f"Environment healthy: {health}", flush=True)
+        print(f"Health: {env_get('/health')}", flush=True)
     except Exception as e:
-        print(f"ERROR: Cannot reach environment at {ENV_BASE_URL}: {e}", flush=True)
+        print(f"ERROR: {e}", flush=True)
         sys.exit(1)
-
     client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
-
-    all_results = {}
+    results = {}
     for task_id in TASK_IDS:
-        result = run_task(client, task_id)
-        all_results[task_id] = result
-
-    output = {
-        "model":   MODEL_NAME,
-        "seed":    SEED,
-        "env_url": ENV_BASE_URL,
-        "results": all_results,
-    }
+        results[task_id] = run_task(client, task_id)
     with open("baseline_scores.json", "w") as f:
-        json.dump(output, f, indent=2)
-
+        json.dump({"model": MODEL_NAME, "seed": SEED, "results": results}, f, indent=2)
     print("\n========================================", flush=True)
-    print(f"  RESULTS  (model={MODEL_NAME})", flush=True)
+    for tid, r in results.items():
+        print(f"  {tid}: score={r['avg_score']:.4f} steps={r['steps']}", flush=True)
     print("========================================", flush=True)
-    diff = {"task_classify": "easy", "task_route": "medium", "task_respond": "hard"}
-    for tid, r in all_results.items():
-        print(f"  {tid:25s} [{diff[tid]:6s}]  score={r['avg_score']:.4f}  steps={r['steps']}", flush=True)
-    print("========================================", flush=True)
-    print("Saved to baseline_scores.json", flush=True)
-
 
 if __name__ == "__main__":
     main()
