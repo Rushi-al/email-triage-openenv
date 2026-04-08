@@ -4,19 +4,19 @@
                    "task_classify":  {
                                          "task_id":  "task_classify",
                                          "avg_score":  0.8,
-                                         "total_reward":  8.0,
+                                         "total_reward":  0.8,
                                          "steps":  10
                                      },
                    "task_route":  {
                                       "task_id":  "task_route",
                                       "avg_score":  0.85,
-                                      "total_reward":  8.5,
+                                      "total_reward":  0.85,
                                       "steps":  10
                                   },
                    "task_respond":  {
                                         "task_id":  "task_respond",
                                         "avg_score":  0.765,
-                                        "total_reward":  7.65,
+                                        "total_reward":  0.765,
                                         "steps":  10
                                     }
                },

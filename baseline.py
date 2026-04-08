@@ -60,6 +60,11 @@ Department rules:
 """
 
 
+def clamp_score(score: float) -> float:
+    """Ensure score is strictly within (0, 1) and survives coarse rounding."""
+    return max(0.05, min(0.95, float(score)))
+
+
 def call_api(method: str, path: str, payload: Optional[Dict] = None) -> Dict:
     url = f"{ENV_BASE_URL}{path}"
     r = (requests.post(url, json=payload, timeout=30) if method == "POST"
@@ -118,7 +123,7 @@ def run_task(task_id: str) -> Dict[str, Any]:
             "response": action.get("response"),
         })
 
-        reward = result.get("reward", 0.0)
+        reward = clamp_score(result.get("reward", 0.0))
         total_reward += reward
         steps += 1
         log.info(
@@ -132,8 +137,15 @@ def run_task(task_id: str) -> Dict[str, Any]:
             break
 
     avg = total_reward / steps if steps > 0 else 0.0
+    avg = clamp_score(avg)
+    total_reward_score = clamp_score(avg)
     log.info(f"  ✓ {task_id}: avg={avg:.4f}  steps={steps}")
-    return {"task_id": task_id, "avg_score": round(avg, 4), "total_reward": round(total_reward, 4), "steps": steps}
+    return {
+        "task_id": task_id,
+        "avg_score": round(avg, 4),
+        "total_reward": round(total_reward_score, 4),
+        "steps": steps,
+    }
 
 
 def main():
