@@ -51,6 +51,8 @@ class EmailTriageEnvironment:
             done=False,
         )
         self._cumulative_score = 0.0
+        self._state.last_reward = clamp_score(0.0)
+        self._state.cumulative_score = clamp_score(0.0)
         self._current_email = self._email_queue[0]
 
         return self._build_obs("New episode started. Triage this email.", reward=0.0, done=False)
@@ -108,7 +110,10 @@ class EmailTriageEnvironment:
 
     @property
     def state(self) -> TriageState:
-        return self._state.model_copy()
+        state = self._state.model_copy()
+        state.last_reward = clamp_score(state.last_reward)
+        state.cumulative_score = clamp_score(state.cumulative_score)
+        return state
 
     # -------------------------------------------------------------------------
     # Private helpers
