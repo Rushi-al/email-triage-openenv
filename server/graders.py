@@ -12,8 +12,8 @@ RIGHT  = 0.90   # never 1.0
 
 
 def clamp_score(score: float) -> float:
-    """Ensure score is strictly within (0, 1)."""
-    return max(1e-6, min(1 - 1e-6, score))
+    """Ensure score is strictly within (0, 1) and survives rounding."""
+    return max(0.01, min(0.99, score))
 
 
 def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
