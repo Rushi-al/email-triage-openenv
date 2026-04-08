@@ -64,9 +64,9 @@ class EmailObservation(BaseModel):
         task_id     : Which task is currently active.
         task_description : Human-readable task goal.
         step_feedback   : Human-readable feedback on the last action (empty on reset).
-        reward       : Reward received for the last action (0.0 on reset).
+        reward       : Reward received for the last action (strictly between 0 and 1).
         done         : Whether the episode has ended.
-        score        : Running cumulative score for the episode (0.0-1.0).
+        score        : Running cumulative score for the episode (strictly between 0 and 1).
     """
 
     email_id: str = Field(..., description="Unique ID for this email")
@@ -77,9 +77,9 @@ class EmailObservation(BaseModel):
     task_id: str = Field(..., description="Active task ID")
     task_description: str = Field(..., description="What the agent needs to accomplish")
     step_feedback: str = Field("", description="Feedback on the previous action")
-    reward: float = Field(0.0, description="Reward for the last action")
+    reward: float = Field(0.05, description="Reward for the last action")
     done: bool = Field(False, description="True if the episode is complete")
-    score: float = Field(0.0, description="Cumulative episode score (0.0-1.0)")
+    score: float = Field(0.05, description="Cumulative episode score (strictly between 0 and 1)")
 
 
 # -----------------------------------------------------------------------------
@@ -92,17 +92,17 @@ class TriageReward(BaseModel):
     Detailed breakdown of the reward for the last action.
 
     Fields:
-        total          : Overall reward [0.0-1.0]
-        urgency_score  : Partial score for urgency classification [0.0-0.33]
-        routing_score  : Partial score for department routing [0.0-0.33]
-        response_score : Partial score for response quality [0.0-0.34]
+        total          : Overall reward strictly between 0 and 1
+        urgency_score  : Partial score for urgency classification (>0, <1)
+        routing_score  : Partial score for department routing (>0, <1)
+        response_score : Partial score for response quality (>0, <1)
         penalties      : Any penalties applied (e.g. empty response, wrong format)
         details        : Human-readable explanation
     """
     total: float = Field(..., description="Total reward strictly between 0 and 1")
-    urgency_score: float = Field(0.0, description="Score for urgency classification")
-    routing_score: float = Field(0.0, description="Score for department routing")
-    response_score: float = Field(0.0, description="Score for response quality")
+    urgency_score: float = Field(0.05, description="Score for urgency classification")
+    routing_score: float = Field(0.05, description="Score for department routing")
+    response_score: float = Field(0.05, description="Score for response quality")
     penalties: float = Field(0.01, description="Penalties applied (never exactly 0.0)")
     details: str = Field("", description="Human-readable reward explanation")
 
@@ -121,8 +121,8 @@ class TriageState(BaseModel):
     task_id: str = Field(..., description="Active task ID")
     step_count: int = Field(0, description="Steps taken in this episode")
     current_email_id: str = Field("", description="ID of the email currently being triaged")
-    cumulative_score: float = Field(0.0, description="Running score for this episode")
-    last_reward: float = Field(0.0, description="Reward from the most recent step")
+    cumulative_score: float = Field(0.05, description="Running score for this episode")
+    last_reward: float = Field(0.05, description="Reward from the most recent step")
     done: bool = Field(False, description="Whether the episode has ended")
     emails_processed: int = Field(0, description="Total emails triaged this episode")
     max_steps: int = Field(10, description="Maximum steps allowed per episode")

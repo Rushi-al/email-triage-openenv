@@ -53,7 +53,7 @@ action_space:
       type: string
       required: false
 
-reward_range: [0.0, 1.0]
+reward_range: [0.05, 0.95]
 
 tasks:
   - id: task_classify
@@ -63,7 +63,7 @@ tasks:
       Classify the urgency of each incoming support email.
       Set urgency to: urgent | normal | low.
     max_steps: 10
-    score_range: [0.0, 1.0]
+    score_range: [0.05, 0.95]
     action_fields_required: [urgency]
 
   - id: task_route
@@ -73,7 +73,7 @@ tasks:
       Classify urgency AND route to the correct department.
       Set urgency and department. Partial credit per component.
     max_steps: 10
-    score_range: [0.0, 1.0]
+    score_range: [0.05, 0.95]
     action_fields_required: [urgency, department]
 
   - id: task_respond
@@ -83,7 +83,7 @@ tasks:
       Classify urgency, route to department, AND draft a professional
       reply. Scored on all three components with partial credit.
     max_steps: 10
-    score_range: [0.0, 1.0]
+    score_range: [0.05, 0.95]
     action_fields_required: [urgency, department, response]
 
 server:
