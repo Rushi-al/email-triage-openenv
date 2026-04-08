@@ -18,8 +18,7 @@ Usage:
     with EmailTriageClient("http://localhost:7860") as c:
         c.reset("task_respond")
         while True:
-            r = c.step(urgency="normal", department="billing",
-                       response="Dear customer, ...")
+            r = c.step(urgency="normal", department="billing",response="Dear customer, ...")
             if r["done"]:
                 break
 """
