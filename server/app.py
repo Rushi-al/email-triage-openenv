@@ -101,7 +101,7 @@ async def step(req: StepRequest):
     except Exception as e:
         raise HTTPException(422, f"Invalid action: {e}")
     try:
-       obs, reward, done, info = env.step(action)
+        obs, reward, done, info = env.step(action)
         # Clamp reward strictly between 0 and 1 (exclusive) per validator requirement
         reward = round(max(0.01, min(0.99, reward)), 4)
         info["total"] = round(max(0.01, min(0.99, info.get("total", 0.01))), 4)
