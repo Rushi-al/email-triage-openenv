@@ -99,8 +99,7 @@ class TriageReward(BaseModel):
         penalties      : Any penalties applied (e.g. empty response, wrong format)
         details        : Human-readable explanation
     """
-
-    total: float = Field(..., ge=0.01, le=0.99, description="Total reward (0.0–1.0) exclusive")
+    total: float = Field(..., description="Total reward strictly between 0 and 1")
     urgency_score: float = Field(0.0, description="Score for urgency classification")
     routing_score: float = Field(0.0, description="Score for department routing")
     response_score: float = Field(0.0, description="Score for response quality")

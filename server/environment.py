@@ -129,7 +129,8 @@ class EmailTriageEnvironment:
             task_id=self._state.task_id,
             task_description=TASK_DESCRIPTIONS[self._state.task_id],
             step_feedback=feedback,
-            reward=reward,
+             reward=round(max(0.05, min(0.95, reward)) if reward > 0 else 0.05, 4),
             done=done,
-            score=round(avg, 4),
+            score=round(max(0.05, min(0.95, avg)) if avg > 0 else 0.05, 4),
+        
         )
