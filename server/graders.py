@@ -34,7 +34,7 @@ def grade_classify(action: TriageAction, ground_truth: dict) -> TriageReward:
         urgency_score=_s(urgency_score),
         routing_score=_s(0.10),
         response_score=_s(0.10),
-        penalties=round(penalties, 4),
+        penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=detail,
     )
 
@@ -52,7 +52,7 @@ def grade_route(action: TriageAction, ground_truth: dict) -> TriageReward:
         urgency_score=_s(urgency_score),
         routing_score=_s(routing_score),
         response_score=_s(0.10),
-        penalties=round(penalties, 4),
+        penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=(
             f"Urgency {'OK' if u_correct else 'WRONG'} | "
             f"Dept {'OK' if d_correct else 'WRONG'}"
@@ -99,7 +99,7 @@ def grade_respond(action: TriageAction, ground_truth: dict) -> TriageReward:
         urgency_score=_s(urgency_score),
         routing_score=_s(routing_score),
         response_score=_s(response_score),
-        penalties=round(penalties, 4),
+        penalties=round(max(0.01, penalties) if penalties > 0 else 0.01, 4),
         details=(
             f"Urgency {'OK' if u_correct else 'WRONG'} | "
             f"Dept {'OK' if d_correct else 'WRONG'} | "

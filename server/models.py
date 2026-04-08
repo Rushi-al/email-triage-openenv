@@ -103,7 +103,7 @@ class TriageReward(BaseModel):
     urgency_score: float = Field(0.0, description="Score for urgency classification")
     routing_score: float = Field(0.0, description="Score for department routing")
     response_score: float = Field(0.0, description="Score for response quality")
-    penalties: float = Field(0.0, description="Penalties applied (negative contribution)")
+    penalties: float = Field(0.01, description="Penalties applied (never exactly 0.0)")
     details: str = Field("", description="Human-readable reward explanation")
 
 
