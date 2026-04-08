@@ -62,7 +62,7 @@ Department rules:
 
 def clamp_score(score: float) -> float:
     """Ensure score is strictly within (0, 1) and survives coarse rounding."""
-    return max(0.05, min(0.95, float(score)))
+    return max(0.001, min(0.999, float(score)))
 
 
 def call_api(method: str, path: str, payload: Optional[Dict] = None) -> Dict:

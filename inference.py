@@ -41,7 +41,7 @@ Department: billing=charges/invoices, technical=API/bugs/login, returns=wrong it
 
 def _safe_reward(r) -> float:
     """Guarantee reward is strictly between 0 and 1 — never 0.0 or 1.0."""
-    return round(max(0.05, min(0.95, float(r))), 2)
+    return round(max(0.001, min(0.999, float(r))), 2)
 
 
 # ── Logging helpers (MANDATORY FORMAT) ───────────────────────────────────
