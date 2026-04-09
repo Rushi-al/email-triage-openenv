@@ -27,9 +27,11 @@ def log_start(task, env, model):
 def log_step(step, action, reward, done, error):
     print(f"[STEP] step={step} action={action} reward={_r(reward):.2f} done={'true' if done else 'false'} error={error or 'null'}", flush=True)
 
-def log_end(success, steps, rewards):
+
+def log_end(task_id, steps, rewards):
     safe = [_r(r) for r in rewards] if rewards else [0.5]
-    print(f"[END] success={'true' if success else 'false'} steps={steps} rewards={','.join(f'{r:.2f}' for r in safe)}", flush=True)
+    score = _r(sum(safe) / len(safe))
+    print(f"[END] task={task_id} score={score} steps={steps}", flush=True)
 
 def env_post(path, payload):
     r = requests.post(f"{ENV_BASE_URL}{path}", json=payload, timeout=30)
@@ -83,9 +85,9 @@ def run_task(client, task_id):
         error = str(e)
         log_step(steps + 1, "null", 0.5, True, error)
         if not rewards: rewards = [0.5]
-
-    avg   = _r(sum(rewards) / len(rewards))
-    log_end(avg >= 0.5, steps, rewards)
+    finally:
+        avg = _r(sum(rewards) / len(rewards)) if rewards else 0.5
+        log_end(task_id, steps, rewards)
     return {"task_id": task_id, "avg_score": avg, "steps": steps, "success": avg >= 0.5, "rewards": rewards}
 
 def main():
