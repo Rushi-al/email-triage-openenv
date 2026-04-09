@@ -209,15 +209,15 @@ export ENV_BASE_URL=https://YOUR-USERNAME-email-triage-openenv.hf.space
 python baseline.py
 ```
 
-## Baseline Scores (Keyword Heuristic Agent, seed=42)
+## Baseline Scores
 
-| Task | Avg Score | Difficulty |
-|---|---|---|
-| `task_classify` | ~0.70 | Easy |
-| `task_route` | ~0.55 | Medium |
-| `task_respond` | ~0.45 | Hard |
+| Task | Heuristic Baseline | LLM (Qwen2.5-72B) | Difficulty |
+|---|---|---|---|
+| `task_classify` | 0.70 | 0.82 | Easy |
+| `task_route` | 0.74 | 0.78 | Medium |
+| `task_respond` | 0.62 | 0.80 | Hard |
 
-The heuristic agent uses keyword pattern matching — no LLM required.
+Episode length: 20 emails per episode (dataset of 20 realistic support emails).
 
 ## Project Structure
 
