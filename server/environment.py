@@ -10,7 +10,7 @@ from .models import TriageAction, EmailObservation, TriageState
 from .email_dataset import EMAILS
 from .graders import grade, TASK_DESCRIPTIONS, clamp_score
 
-MAX_STEPS_PER_EPISODE = 10
+MAX_STEPS_PER_EPISODE = 20
 VALID_TASK_IDS = ["task_classify", "task_route", "task_respond"]
 
 
